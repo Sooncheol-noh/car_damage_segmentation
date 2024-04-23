@@ -1,0 +1,13 @@
+*/__pycache__
+
+/.vscode
+/logs
+/result_pkl
+/dataset
+/temp_debug
+
+*.ipynb
+
+car_damage.yaml
+segformer_example.py
+test.py
