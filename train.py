@@ -17,13 +17,15 @@ from utils.custom_trainer import CustomTrainer
 from utils.metric import BinaryMetrics
 from utils.custom_callback import ImageLoggingCallback
 from utils.etc import minmax_normalize, compute_metrics
+# from utils.custom_scheduler import CosineAnnealingWarmUpRestarts
+from cosine_annealing_warmup import CosineAnnealingWarmupRestarts
 
 def parsing_argument():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_root", default="./sampled_data", type=str)
+    parser.add_argument("--data_root", default="./dataset", type=str)
     parser.add_argument("--train_list", default="train_fold_total.txt", type=str)
     parser.add_argument("--test_list", default="test_fold1.txt", type=str)
-    parser.add_argument("--output_dir", default="./temp_logs", type=str)
+    parser.add_argument("--output_dir", default="./logs/try0", type=str)
     parser.add_argument("--tensorboard_logging_dir", default=None, type=str)
     parser.add_argument(
         "--key_list",
@@ -38,7 +40,7 @@ def parsing_argument():
     parser.add_argument("--weight_decay", default=0.05, type=float)
     parser.add_argument(
         "--steplr_milestones",
-        default=[200, 1000, 2000, 3000],
+        default=[1000, 2000, 3000, 4000, 5000],
         nargs="+",
         type=int,
     )
@@ -59,15 +61,10 @@ def main():
         test_list = f.readlines()
         test_list = [name.strip() for name in test_list]
 
-    # train_image_root = os.path.join(args.data_root, "train", "images")
-    # train_mask_png_root = os.path.join(args.data_root, "train", "annotations")
-    # test_image_root = os.path.join(args.data_root, "test", "images")
-    # test_mask_png_root = os.path.join(args.data_root, "test", "annotations")
-    
-    train_image_root = os.path.join(args.data_root, "images")
-    train_mask_png_root = os.path.join(args.data_root, "annotations")
-    test_image_root = os.path.join(args.data_root, "images")
-    test_mask_png_root = os.path.join(args.data_root, "annotations")
+    train_image_root = os.path.join(args.data_root, "train", "images")
+    train_mask_png_root = os.path.join(args.data_root, "train", "annotations")
+    test_image_root = os.path.join(args.data_root, "test", "images")
+    test_mask_png_root = os.path.join(args.data_root, "test", "annotations")
 
     id2label = {int(k): v for k, v in enumerate(args.key_list)}
     label2id = {v: k for k, v in id2label.items()}
@@ -137,7 +134,7 @@ def main():
         save_total_limit=100,
         evaluation_strategy="steps",
         save_strategy="steps",
-        save_steps=50,
+        save_steps=500,
         eval_steps=None,
         logging_strategy="steps",
         logging_steps=10,
@@ -146,10 +143,17 @@ def main():
         push_to_hub=False,
     )
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=0.05)
-    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
-        optimizer, milestones=args.steplr_milestones, gamma=0.5
-    )
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.1, weight_decay=0.05)
+    lr_scheduler = CosineAnnealingWarmupRestarts(optimizer,
+                                          first_cycle_steps=500,
+                                          cycle_mult=1.5,
+                                          max_lr=args.lr,
+                                          min_lr=0.00000001,
+                                          warmup_steps=50,
+                                          gamma=0.8)
+    # lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+    #     optimizer, milestones=args.steplr_milestones, gamma=0.5
+    # )
 
     trainer = CustomTrainer(
         loss_function=binaryfocalloss,

@@ -13,18 +13,18 @@ class ImageLoggingCallback(TrainerCallback):
         self.tb_writer = tb_writer
     
     def on_evaluate(self, args, state, control, model, eval_dataloader, **kwargs): 
-        if state.global_step % 50 != 0:
+        if state.global_step % 100 != 0:
             return
 
         key_list = ["Scratched", "Breakage", "Separated", "Crushed", "Total"]
         sigmoid = nn.Sigmoid()
         for idx, data in enumerate(eval_dataloader):
             if idx == 0:
-                pixel_values = data['pixel_values'][0]
-                labels = data['labels'][0]
+                pixel_values = data['pixel_values'][64]
+                labels = data['labels'][64]
             elif idx == 1:
-                pixel_values = data['pixel_values'][0]
-                labels = data['labels'][0]
+                pixel_values = data['pixel_values'][13]
+                labels = data['labels'][13]
             else:
                 break
                         

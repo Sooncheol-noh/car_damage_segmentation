@@ -3,6 +3,8 @@
 /.vscode
 /logs
 /result_pkl
+/results
+/logs_try0_backup
 /dataset
 /temp_debug
 
@@ -10,4 +12,3 @@
 
 car_damage.yaml
 segformer_example.py
-test.py
